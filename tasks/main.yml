@@ -13,24 +13,21 @@
   file: path=/etc/nginx/sites-enabled/default state=absent
   sudo: true
   tags: nginx
+  notify: restart nginx
 
 - name: copy nginx config files
   template: src={{ item.src }} dest=/etc/nginx/sites-available/{{ item.dest }}
   sudo: true
   tags: nginx
   with_items: vhosts
+  notify: restart nginx
 
 - name: enable platform virtual host
   file: src=/etc/nginx/sites-available/{{ item.dest }} dest=/etc/nginx/sites-enabled/{{ item.dest }} state=link
   sudo: true
   tags: nginx
   with_items: vhosts
-
-# @todo handler?
-- name: restart nginx
-  service: name=nginx state=restarted enabled=yes
-  sudo: true
-  tags: nginx
+  notify: restart nginx
 
 # @todo ufw playbook?
 - name: open ports in firewall
@@ -40,9 +37,4 @@
     - 80
     - 443
   tags: ufw
-
-# @todo handler?
-- name: reload firewall
-  ufw: state=enabled direction=incoming policy=deny
-  sudo: true
-  tags: ufw
+  notify: reload firewall
