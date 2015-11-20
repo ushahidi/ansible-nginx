@@ -1,0 +1,48 @@
+---
+- name: remove apache2 server
+  apt: name=apache2 state=absent
+  sudo: true
+
+- name: install nginx
+  apt: name={{ item }} state=latest
+  sudo: true
+  with_items:
+    - nginx
+
+- name: remove default nginx config
+  file: path=/etc/nginx/sites-enabled/default state=absent
+  sudo: true
+  tags: nginx
+
+- name: copy nginx config files
+  template: src={{ item.src }} dest=/etc/nginx/sites-available/{{ item.dest }}
+  sudo: true
+  tags: nginx
+  with_items: vhosts
+
+- name: enable platform virtual host
+  file: src=/etc/nginx/sites-available/{{ item.dest }} dest=/etc/nginx/sites-enabled/{{ item.dest }} state=link
+  sudo: true
+  tags: nginx
+  with_items: vhosts
+
+# @todo handler?
+- name: restart nginx
+  service: name=nginx state=restarted enabled=yes
+  sudo: true
+  tags: nginx
+
+# @todo ufw playbook?
+- name: open ports in firewall
+  ufw: rule=allow proto=tcp port={{ item }}
+  sudo: true
+  with_items:
+    - 80
+    - 443
+  tags: ufw
+
+# @todo handler?
+- name: reload firewall
+  ufw: state=enabled direction=incoming policy=deny
+  sudo: true
+  tags: ufw
