@@ -38,3 +38,4 @@
     - 443
   tags: ufw
   notify: reload firewall
+  when: firewall_disabled is not defined or not firewall_disabled
