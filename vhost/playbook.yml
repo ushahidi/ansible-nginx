@@ -1,0 +1,27 @@
+---
+- hosts: all
+  pre_tasks:
+    - name: Create docroot for host_1
+      file: path=/var/www/host_1 recurse=yes state=directory mode=0777
+    - name: Create docroot for host_2
+      file: path=/var/www/host_2 recurse=yes state=directory mode=0777
+
+  roles:
+    # - role: nginx.server
+    - role: vhost
+      vhost_id: host_1
+      vhost_names: [ host_1.localdomain ]
+      vhost_docroot: /var/www/host_1
+      vhost_app_config: "{{ lookup('template', 'tests/templates/host_1.conf.j2') }}"
+      default_server: True
+      ssl_certfiles_key_password: passphrase1
+      ssl_certfiles_cert_file: tests/ssl/server.cert
+      ssl_certfiles_key_file: tests/ssl/server.key
+      https_enabled: true
+    - role: vhost
+      vhost_id: host_2
+      vhost_names: [ host_2.localdomain , api.host_2.localdomain ]
+      vhost_docroot: /var/www/host_2
+      vhost_app_config: "{{ lookup('template', 'tests/templates/host_2.conf.j2') }}"
+      ssl_certs_flavor: letsencrypt
+      https_enabled: true

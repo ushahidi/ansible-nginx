@@ -1,0 +1,55 @@
+# Actions for letsencrypt provided certificates
+- block:
+  - name: initialise vars
+    set_fact:
+      _ssl_certs_available: False
+      _ssl_csr_params_file: "{{ ssl_server_home }}/{{ vhost_id }}.csr.params"
+
+  - name: generate csr parameters
+    template: src=templates/csr.cnf.j2 dest={{ _ssl_csr_params_file }} owner=root group=root mode=0600
+
+  - name: fingerprint csr parameters
+    stat: path={{ _ssl_csr_params_file }} get_checksum=true
+    register: st_csr_params
+
+  - name: set up targets
+    set_fact:
+      _server_key_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}.key"
+      _server_cert_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}.crt"
+      _server_cert_src_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}_{{ st_csr_params.stat.checksum }}.crt"
+      _server_csr_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}_{{ st_csr_params.stat.checksum }}.csr"
+
+  - name: generate ssl key
+    command: openssl genrsa -out {{ _server_key_file }} 4096
+    args:
+      creates: "{{ _server_key_file }}"
+
+  - name: generate csr
+    command: openssl req -sha256 -new -config {{ _ssl_csr_params_file }} -key {{ _server_key_file }} -out {{ _server_csr_file }}
+    args:
+      creates: "{{ _server_csr_file }}"
+
+  - name: check if certification generation is necessary
+    script: files/crt_gen_check.sh {{ _server_cert_src_file }} {{ _server_cert_file }} {{ letsencrypt_validity_window }}
+    ignore_errors: true
+    register: st_cert_gen
+
+  - block:
+    - name: get challenge 
+      letsencrypt:
+        account_email: "{{ letsencrypt_account_email }}"
+        account_key: "{{ letsencrypt_account_key }}"
+        csr: "{{ _server_csr_file }}"
+        dest: "{{ _server_cert_src_file }}"
+        # acme_directory: # change to production
+    
+    when: st_cert_gen.rc == 1
+
+  - name: confirm the ssl material is available
+    set_fact:
+      _ssl_certs_available: True
+    when: 
+
+  when: ssl_certs_flavor == 'letsencrypt'
+  become: true
+  become_user: root
