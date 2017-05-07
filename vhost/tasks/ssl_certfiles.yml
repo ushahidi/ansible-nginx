@@ -6,7 +6,6 @@
   
   - name: set up targets
     set_fact:
-      _ssl_certs_available: False
       _server_key_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}.key"
       _server_cert_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}.crt"
 
@@ -26,10 +25,6 @@
   - name: copy the key to its definitive location
     copy: src=/tmp/{{ vhost_id }}.key dest={{ _server_key_file }} mode=640 group=www-data remote_src=yes
     when: ssl_certfiles_key_password is not defined and not ssl_certfiles_key_password
-
-  - name: confirm the ssl material is available
-    set_fact:
-      _ssl_certs_available: True
 
   when: ssl_certs_flavor == 'certfiles'
   become: True

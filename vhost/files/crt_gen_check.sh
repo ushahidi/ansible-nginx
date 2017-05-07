@@ -16,11 +16,11 @@ if [ "`readlink -f ${crt_path}`" != "`readlink -f ${crt_sym_path}`"]; then
 fi
 
 # 3. if the certificate file expiration has entered into the validity window
-end_date=`openssl x509 -enddate -noout -in ${crt_path} | cut -f 2 -d \=`
-end_ts=`date -u -d "${end_date}" +%s`
-now_ts=`date -u +%s`
-if [ "$((end_ts - now_ts))" -gt "$validity_secs" ]; then
-	exit 1;
-fi
+# end_date=`openssl x509 -enddate -noout -in ${crt_path} | cut -f 2 -d \=`
+# end_ts=`date -u -d "${end_date}" +%s`
+# now_ts=`date -u +%s`
+# if [ "$((end_ts - now_ts))" -gt "$validity_secs" ]; then
+# 	exit 1;
+# fi
 
 exit 0;

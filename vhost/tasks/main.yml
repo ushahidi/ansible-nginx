@@ -7,15 +7,4 @@
 - include: ssl_{{ ssl_certs_flavor }}.yml
   when: https_enabled
 
-- block:
-  - name: virtual host configuration
-    template: src=templates/vhost_skel.conf.j2 dest={{ nginx_conf_home }}/sites-available/{{ vhost_id }} owner=root group=root mode=0600
-
-  - name: enable virtual host by linking
-    file: src={{ nginx_conf_home }}/sites-available/{{ vhost_id }} dest={{ nginx_conf_home }}/sites-enabled/{{ vhost_id }} state={{ vhost_enabled | ternary('link', 'absent') }}
-
-  become: true
-  become_user: root
-
-- name: test config files
-  command: nginx -t
+- include: vhost_write.yml

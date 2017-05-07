@@ -1,0 +1,29 @@
+# If https is enabled, check that the necessary crypto material is there
+- block:
+  - name: check if there's cryptographic material available already to the vhost
+    stat: path={{ item }} follow=yes
+    with_items:
+      - "{{ _server_key_file | default('/__noexist__') }}"
+      - "{{ _server_cert_file | default('/__noexist__') }}"
+    register: st_crypto_material
+    
+  - name:
+    set_fact:
+      _ssl_certs_available: "{{ st_crypto_material.results[0].stat.exists and st_crypto_material.results[1].stat.exists }}"
+
+  when: https_enabled
+  become: true
+  become_user: root
+
+# Write and enable configurations
+- block:
+  - name: virtual host configuration
+    template: src=templates/vhost_skel.conf.j2 dest={{ nginx_conf_home }}/sites-available/{{ vhost_id }} owner=root group=root mode=0600
+    notify: restart nginx
+
+  - name: enable virtual host by linking
+    file: src={{ nginx_conf_home }}/sites-available/{{ vhost_id }} dest={{ nginx_conf_home }}/sites-enabled/{{ vhost_id }} state={{ vhost_enabled | ternary('link', 'absent') }}
+    notify: restart nginx
+
+  become: true
+  become_user: root

@@ -22,9 +22,10 @@ ssl_certs_flavor: certfiles       # certfiles|letsencrypt
 
 # must be defined if ssl_certs_flavor == letsencrypt
 # letsencrypt_account_email:
-# letsencrypt_account_key:
+# letsencrypt_account_key_file:
+# letsencrypt_decrypt_password:
 letsencrypt_validity_window: 30   # how many days before expiration to request a renewal
-
+letsencrypt_sandbox_dir: /var/www/letsencrypt
 
 # other defaults
 nginx_conf_home: /etc/nginx

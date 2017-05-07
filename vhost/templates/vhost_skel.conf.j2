@@ -14,6 +14,17 @@ server {
     root {{ vhost_docroot }};
     index {{ vhost_index }};
 
+{% if https_enabled and ssl_certs_flavor == 'letsencrypt' %}
+    # Provide a route to letsencrypt challenge responses
+    location ^~ /.well-known/acme-challenge/ {
+        default_type "text/plain";
+        root {{ letsencrypt_sandbox_dir }};
+    }
+    location = /.well-known/acme-challenge/ {
+        return 404;
+    }
+{% endif %}
+
 {% if https_enabled and _ssl_certs_available %}
     include inc_ssl_practices.conf;
 

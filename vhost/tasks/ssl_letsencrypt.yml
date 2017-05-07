@@ -1,8 +1,10 @@
-# Actions for letsencrypt provided certificates
+# Initialisations
 - block:
+  - name: ensure letsencrypt sandbox folder
+    file: path={{ letsencrypt_sandbox_dir }}/.well-known/acme-challenge recurse=yes state=directory owner=root group=root mode=0755
+
   - name: initialise vars
     set_fact:
-      _ssl_certs_available: False
       _ssl_csr_params_file: "{{ ssl_server_home }}/{{ vhost_id }}.csr.params"
 
   - name: generate csr parameters
@@ -18,7 +20,15 @@
       _server_cert_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}.crt"
       _server_cert_src_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}_{{ st_csr_params.stat.checksum }}.crt"
       _server_csr_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}_{{ st_csr_params.stat.checksum }}.csr"
+  become: true
+  become_user: root
 
+# Ensure there's a working virtual host so that we can pass the validation
+- include: vhost_write.yml
+- meta: flush_handlers    # apply changes, if any
+
+# Actions for providing and verifying letsencrypt certificates
+- block:
   - name: generate ssl key
     command: openssl genrsa -out {{ _server_key_file }} 4096
     args:
@@ -29,27 +39,52 @@
     args:
       creates: "{{ _server_csr_file }}"
 
-  - name: check if certification generation is necessary
-    script: files/crt_gen_check.sh {{ _server_cert_src_file }} {{ _server_cert_file }} {{ letsencrypt_validity_window }}
-    ignore_errors: true
-    register: st_cert_gen
-
-  - block:
-    - name: get challenge 
-      letsencrypt:
-        account_email: "{{ letsencrypt_account_email }}"
-        account_key: "{{ letsencrypt_account_key }}"
-        csr: "{{ _server_csr_file }}"
-        dest: "{{ _server_cert_src_file }}"
-        # acme_directory: # change to production
-    
-    when: st_cert_gen.rc == 1
-
-  - name: confirm the ssl material is available
+  - name: set up helpful facts
     set_fact:
-      _ssl_certs_available: True
-    when: 
+      _le_account_key_enc: "{{ ssl_server_home }}/letsencrypt_account.pem.enc"
+      _le_account_key: "{{ ssl_server_home }}/letsencrypt_account.pem"
 
-  when: ssl_certs_flavor == 'letsencrypt'
+  - name: set letsencrypt account key
+    copy: src={{ letsencrypt_account_key_file }} dest={{ _le_account_key_enc }} mode=0700
+
+  - name: decrypt letsencrypt account key
+    command: openssl rsa -in {{ _le_account_key_enc }} -out {{ _le_account_key }} -passin pass:{{ letsencrypt_decrypt_password }}
+    args:
+      creates: "{{ _le_account_key }}"
+
+  - name: get challenge 
+    letsencrypt:
+      account_email: "{{ letsencrypt_account_email }}"
+      account_key: "{{ _le_account_key }}"
+      csr: "{{ _server_csr_file }}"
+      dest: "{{ _server_cert_src_file }}"
+      acme_directory: "https://acme-v01.api.letsencrypt.org/directory"
+      remaining_days: "{{ letsencrypt_validity_window }}"
+    register: st_challenge
+
+  - name: satisfy the challenge/s
+    copy:
+      dest: "{{ letsencrypt_sandbox_dir }}/{{ st_challenge['challenge_data'][item]['http-01']['resource'] }}"
+      content: "{{ st_challenge['challenge_data'][item]['http-01']['resource_value'] }}"
+    with_items: "{{ vhost_names }}"
+    when: st_challenge.changed
+
+  - name: obtain certificate
+    letsencrypt:
+      account_email: "{{ letsencrypt_account_email }}"
+      account_key: "{{ _le_account_key }}"
+      csr: "{{ _server_csr_file }}"
+      dest: "{{ _server_cert_src_file }}"
+      data: "{{ st_challenge }}"
+      acme_directory: "https://acme-v01.api.letsencrypt.org/directory"
+      remaining_days: "{{ letsencrypt_validity_window }}"
+    register: st_challenge_result
+    when: st_challenge.changed
+    notify: restart nginx
+
+  - name: symlink generated certificate to certificate path for vhost
+    file: src={{ _server_cert_src_file }} dest={{ _server_cert_file }} state=link
+    notify: restart nginx
+
   become: true
   become_user: root
