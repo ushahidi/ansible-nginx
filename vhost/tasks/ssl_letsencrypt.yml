@@ -17,8 +17,9 @@
   - name: set up targets
     set_fact:
       _server_key_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}.key"
-      _server_cert_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}.crt"
+      _server_cert_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}.chain.crt"
       _server_cert_src_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}_{{ st_csr_params.stat.checksum }}.crt"
+      _server_cert_intermediate: "{{ ssl_server_home }}/letsencrypt_intermediate.crt"
       _server_csr_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}_{{ st_csr_params.stat.checksum }}.csr"
   become: true
   become_user: root
@@ -29,6 +30,12 @@
 
 # Actions for providing and verifying letsencrypt certificates
 - block:
+  - name: fetch intermediate certificate
+    get_url:
+      url: https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt
+      dest: "{{ _server_cert_intermediate }}"
+      sha256sum: "e446c5e9dbef9d09ac9f7027c034602492437a05ff6c40011d7235fca639c79a"
+
   - name: generate ssl key
     command: openssl genrsa -out {{ _server_key_file }} 4096
     args:
@@ -82,8 +89,13 @@
     when: st_challenge.changed
     notify: restart nginx
 
-  - name: symlink generated certificate to certificate path for vhost
-    file: src={{ _server_cert_src_file }} dest={{ _server_cert_file }} state=link
+  - name: check certificate file existance
+    stat: path="{{ _server_cert_file }}"
+    register: st_certificate_file
+
+  - name: create certificate file with generated cert and intermediate for compatibility
+    shell: "cat {{ _server_cert_src_file }} {{ _server_cert_intermediate }} > {{ _server_cert_file }}"
+    when: st_challenge_result.changed or not st_certificate_file.stat.exists
     notify: restart nginx
 
   become: true
