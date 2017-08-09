@@ -33,6 +33,14 @@
     when: gzip_support
     notify: restart nginx
 
+  - block:
+      - name: ensure fastcgi cache dir folder
+        file: path={{ fastcgi_cache_path }} state=directory owner=root group=root recurse=yes
+
+      - name: configure fastcgi cache
+        template: src="templates/fastcgi_cache.conf.j2" dest=/etc/nginx/conf.d/fastcgi_cache.conf
+    when: fastcgi_cache_enabled
+
   - name: ensure nginx is setup as a service and running
     service: name=nginx enabled=yes state=started
 

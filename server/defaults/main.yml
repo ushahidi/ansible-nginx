@@ -3,4 +3,10 @@ gzip_support: true
 ssl_support: true
 ssl_server_home: /etc/ssl/private   # server filesystem path for SSL related files
 
+fastcgi_cache_enabled: false
+fastcgi_cache_path: /var/cache/nginx/fastcgi
+fastcgi_cache_keys_size: 4m
+fastcgi_cache_max_size: 1g
+
 # firewall_disabled :               # to be used in environments without ufw installed
+

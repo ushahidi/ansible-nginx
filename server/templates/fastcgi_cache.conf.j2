@@ -1,0 +1,3 @@
+fastcgi_cache_path {{ fastcgi_cache_path }}
+                   keys_zone=fastcgi:{{ fastcgi_cache_keys_size }}
+                   max_size={{ fastcgi_cache_max_size }};

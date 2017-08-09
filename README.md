@@ -6,7 +6,6 @@ Install nginx and enable vhosts
 Role Variables
 --------------
 
-- vhosts: Define vhosts that should be enabled
 
 Dependencies
 ------------
