@@ -35,7 +35,7 @@
 
   - block:
       - name: ensure fastcgi cache dir folder
-        file: path={{ fastcgi_cache_path }} state=directory owner=root group=root recurse=yes
+        file: path={{ fastcgi_cache_path }} state=directory owner=www-data group=www-data recurse=yes
 
       - name: configure fastcgi cache
         template: src="templates/fastcgi_cache.conf.j2" dest=/etc/nginx/conf.d/fastcgi_cache.conf
