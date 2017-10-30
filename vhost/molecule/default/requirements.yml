@@ -1,0 +1,3 @@
+- src: git+ssh://git@github.com/ushahidi/ansible-nginx.git
+  version: v2
+  name: ushahidi.nginx

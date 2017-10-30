@@ -63,27 +63,28 @@
     letsencrypt:
       account_email: "{{ letsencrypt_account_email }}"
       account_key: "{{ _le_account_key }}"
+      challenge: "{{ letsencrypt_challenge }}"
       csr: "{{ _server_csr_file }}"
       dest: "{{ _server_cert_src_file }}"
-      acme_directory: "https://acme-v01.api.letsencrypt.org/directory"
+      acme_directory: "{{ letsencrypt_acme_directory }}"
       remaining_days: "{{ letsencrypt_validity_window }}"
     register: st_challenge
 
-  - name: satisfy the challenge/s
-    copy:
-      dest: "{{ letsencrypt_sandbox_dir }}/{{ st_challenge['challenge_data'][item]['http-01']['resource'] }}"
-      content: "{{ st_challenge['challenge_data'][item]['http-01']['resource_value'] }}"
-    with_items: "{{ vhost_names }}"
-    when: st_challenge.changed
+  - include: ssl_letsencrypt_http_01.yml
+    when: letsencrypt_challenge == 'http-01'
+
+  - include: ssl_letsencrypt_dns_01_with_r53.yml
+    when: letsencrypt_challenge == 'dns-01' and letsencrypt_dns_resolver['driver'] == 'route53'
 
   - name: obtain certificate
     letsencrypt:
       account_email: "{{ letsencrypt_account_email }}"
       account_key: "{{ _le_account_key }}"
+      challenge: "{{ letsencrypt_challenge }}"
       csr: "{{ _server_csr_file }}"
       dest: "{{ _server_cert_src_file }}"
       data: "{{ st_challenge }}"
-      acme_directory: "https://acme-v01.api.letsencrypt.org/directory"
+      acme_directory: "{{ letsencrypt_acme_directory }}"
       remaining_days: "{{ letsencrypt_validity_window }}"
     register: st_challenge_result
     when: st_challenge.changed

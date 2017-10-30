@@ -1,0 +1,14 @@
+- name: satisfy the dns-01 challenge/s
+  route53:
+    command: create
+    zone: "{{ letsencrypt_dns_resolver['names'][item]['zone'] }}"
+    record: "{{ st_challenge['challenge_data'][item]['dns-01']['resource'] }}.{{ item }}"
+    type: TXT
+    ttl: 300
+    value: "\"{{ st_challenge['challenge_data'][item]['dns-01']['resource_value'] }}\""
+    overwrite: true
+    wait: true
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+  with_items: "{{ vhost_names }}"
+  when: st_challenge.changed

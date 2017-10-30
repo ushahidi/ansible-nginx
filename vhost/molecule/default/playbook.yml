@@ -1,0 +1,34 @@
+---
+- name: Converge
+  hosts: all
+  roles:
+    # - role: ushahidi.nginx/server
+    - role: vhost
+      vhost_id: host_1
+      vhost_names: [ host_1.localdomain ]
+      vhost_docroot: /var/www/host_1
+      vhost_app_config: "{{ lookup('template', 'tests/templates/host_1.conf.j2') }}"
+      default_server: True
+      ssl_certfiles_key_password: passphrase1
+      ssl_certfiles_cert_file: tests/ssl/server.cert
+      ssl_certfiles_key_file: tests/ssl/server.key
+      https_enabled: true
+    - role: vhost
+      vhost_id: host_2
+      vhost_names: [ nginx-vhost.test.ushahidilabs.com, nginx-vhost-2.test.ushahidilabs.com ]
+      vhost_docroot: /var/www/host_2
+      vhost_app_config: "{{ lookup('template', 'tests/templates/host_2.conf.j2') }}"
+      letsencrypt_acme_directory: https://acme-staging.api.letsencrypt.org/directory
+      letsencrypt_account_email: systems+test-nginx-vhost@ushahidi.com
+      letsencrypt_account_key_file: tests/ssl/systems_test_nginx_vhost.pem
+      letsencrypt_decrypt_password: testtest
+      letsencrypt_challenge: dns-01
+      letsencrypt_dns_resolver:
+        driver: route53
+        names:
+          nginx-vhost.test.ushahidilabs.com:
+            zone: ushahidilabs.com
+          nginx-vhost-2.test.ushahidilabs.com:
+            zone: ushahidilabs.com
+      ssl_certs_flavor: letsencrypt
+      https_enabled: true

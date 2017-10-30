@@ -1,0 +1,25 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+lint:
+  name: yamllint
+platforms:
+  - name: instance
+    image: ubuntu:trusty
+provisioner:
+  name: ansible
+  lint:
+    name: ansible-lint
+  inventory:
+    group_vars:
+      all:
+        firewall_disabled: true
+        letsencrypt_acme_directory: https://acme-staging.api.letsencrypt.org/directory
+scenario:
+  name: default
+verifier:
+  name: testinfra
+  lint:
+    name: flake8

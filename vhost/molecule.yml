@@ -13,8 +13,8 @@ docker:
         - group1
 verifier:
   name: testinfra
-ansible:
-  become_method: sudo
-  host_vars:
-    server:
-      firewall_disabled: True
+# ansible:
+#   become_method: sudo
+#   host_vars:
+#     server:
+#       firewall_disabled: True
