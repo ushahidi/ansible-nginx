@@ -3,12 +3,12 @@ dependency:
   name: galaxy
 driver:
   name: docker
-# lint:
-#   name: ansible-lint
+lint:
+  name: yamllint
+  enabled: false
 platforms:
-  - name: nginx-server
+  - name: ansible_nginx_server
     image: ubuntu:trusty
-    command: sleep infinity
 provisioner:
   name: ansible
   lint:

@@ -25,7 +25,7 @@
   become_user: root
 
 # Ensure there's a working virtual host so that we can pass the validation
-- include: vhost_write.yml
+- include_tasks: vhost_write.yml
 - meta: flush_handlers    # apply changes, if any
 
 # Actions for providing and verifying letsencrypt certificates
@@ -59,7 +59,7 @@
     args:
       creates: "{{ _le_account_key }}"
 
-  - name: get challenge 
+  - name: get challenge
     letsencrypt:
       account_email: "{{ letsencrypt_account_email }}"
       account_key: "{{ _le_account_key }}"
@@ -70,10 +70,10 @@
       remaining_days: "{{ letsencrypt_validity_window }}"
     register: st_challenge
 
-  - include: ssl_letsencrypt_http_01.yml
+  - include_tasks: ssl_letsencrypt_http_01.yml
     when: letsencrypt_challenge == 'http-01'
 
-  - include: ssl_letsencrypt_dns_01_with_r53.yml
+  - include_tasks: ssl_letsencrypt_dns_01_with_r53.yml
     when: letsencrypt_challenge == 'dns-01' and letsencrypt_dns_resolver['driver'] == 'route53'
 
   - name: obtain certificate

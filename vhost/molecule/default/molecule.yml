@@ -5,8 +5,9 @@ driver:
   name: docker
 lint:
   name: yamllint
+  enabled: false
 platforms:
-  - name: instance
+  - name: ansible_nginx_vhost
     image: ubuntu:trusty
 provisioner:
   name: ansible

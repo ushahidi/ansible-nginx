@@ -1,10 +1,9 @@
 ---
-- name: Check required variables are defined
-  fail: msg="{{ item }} is not defined"
-  when: "{{ item }} is not defined"
+- name: debug vars
+  debug: var={{ item }}
   with_items: [ 'vhost_id', 'vhost_names', 'vhost_docroot', 'vhost_app_config' ]
 
-- include: ssl_{{ ssl_certs_flavor }}.yml
+- include_tasks: ssl_{{ ssl_certs_flavor }}.yml
   when: https_enabled
 
-- include: vhost_write.yml
+- include_tasks: vhost_write.yml

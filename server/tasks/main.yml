@@ -40,7 +40,7 @@
       - name: configure fastcgi cache
         template: src="templates/fastcgi_cache.conf.j2" dest=/etc/nginx/conf.d/fastcgi_cache.conf
     when: fastcgi_cache_enabled
-    
+
   - block:
       - name: disable fastcgi cache
         file:

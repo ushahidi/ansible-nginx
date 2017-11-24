@@ -6,7 +6,7 @@
       - "{{ _server_key_file | default('/__noexist__') }}"
       - "{{ _server_cert_file | default('/__noexist__') }}"
     register: st_crypto_material
-    
+
   - name:
     set_fact:
       _ssl_certs_available: "{{ st_crypto_material.results[0].stat.exists and st_crypto_material.results[1].stat.exists }}"
@@ -22,7 +22,10 @@
     notify: restart nginx
 
   - name: enable virtual host by linking
-    file: src={{ nginx_conf_home }}/sites-available/{{ vhost_id }} dest={{ nginx_conf_home }}/sites-enabled/{{ vhost_id }} state={{ vhost_enabled | ternary('link', 'absent') }}
+    file:
+      src: "{{ nginx_conf_home }}/sites-available/{{ vhost_id }}"
+      dest: "{{ nginx_conf_home }}/sites-enabled/{{ vhost_id }}"
+      state: "{{ vhost_enabled | ternary('link', 'absent') }}"
     notify: restart nginx
 
   become: true
