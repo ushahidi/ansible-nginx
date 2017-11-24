@@ -7,8 +7,10 @@ lint:
   name: yamllint
   enabled: false
 platforms:
-  - name: ansible_nginx_vhost
+  - name: ansible_nginx_vhost_trusty
     image: ubuntu:trusty
+  - name: ansible_nginx_vhost_xenial
+    image: ubuntu:xenial
 provisioner:
   name: ansible
   lint:
