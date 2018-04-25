@@ -1,3 +1,6 @@
+- name: make sure boto is installed
+  apt: name=python-boto state=present
+
 - name: satisfy the dns-01 challenge/s
   route53:
     command: create
