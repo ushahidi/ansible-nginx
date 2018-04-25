@@ -33,6 +33,10 @@
     when: gzip_support
     notify: restart nginx
 
+  - name: setup fastcgi params
+    template: src="templates/fastcgi_params.j2" dest=/etc/nginx/fastcgi_params
+    notify: restart nginx
+
   - block:
       - name: ensure fastcgi cache dir folder
         file: path={{ fastcgi_cache_path }} state=directory owner=www-data group=www-data recurse=yes
