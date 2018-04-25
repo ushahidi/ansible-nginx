@@ -1,0 +1,22 @@
+[ req ]
+default_bits = 4096
+prompt = no
+encrypt_key = no
+default_md = sha256
+distinguished_name = dn
+{% if vhost_names|length > 1 %}
+req_extensions = req_ext
+{% endif %} 
+
+[ dn ]
+CN = {{ vhost_names[0] }}
+emailAddress = systems@ushahidi.com
+O = Ushahidi, Inc.
+L = Orlando
+ST = Florida
+C = US
+ 
+{% if vhost_names|length > 1 %}
+[ req_ext ]
+subjectAltName = DNS: {{ vhost_names[1:] | join(", DNS: ") }}
+{% endif %}

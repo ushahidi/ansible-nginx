@@ -1,0 +1,103 @@
+# Initialisations
+- block:
+  - name: ensure letsencrypt sandbox folder
+    file: path={{ letsencrypt_sandbox_dir }}/.well-known/acme-challenge recurse=yes state=directory owner=root group=root mode=0755
+
+  - name: initialise vars
+    set_fact:
+      _ssl_csr_params_file: "{{ ssl_server_home }}/{{ vhost_id }}.csr.params"
+
+  - name: generate csr parameters
+    template: src=templates/csr.cnf.j2 dest={{ _ssl_csr_params_file }} owner=root group=root mode=0600
+
+  - name: fingerprint csr parameters
+    stat: path={{ _ssl_csr_params_file }} get_checksum=true
+    register: st_csr_params
+
+  - name: set up targets
+    set_fact:
+      _server_key_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}.key"
+      _server_cert_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}.chain.crt"
+      _server_cert_src_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}_{{ st_csr_params.stat.checksum }}.crt"
+      _server_cert_intermediate: "{{ ssl_server_home }}/letsencrypt_intermediate.crt"
+      _server_csr_file: "{{ ssl_server_home }}/ansible_nginx_{{ vhost_id }}_{{ st_csr_params.stat.checksum }}.csr"
+  become: true
+  become_user: root
+
+# Ensure there's a working virtual host so that we can pass the validation
+- include_tasks: vhost_write.yml
+- meta: flush_handlers    # apply changes, if any
+
+# Actions for providing and verifying letsencrypt certificates
+- block:
+  - name: fetch intermediate certificate
+    get_url:
+      url: https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt
+      dest: "{{ _server_cert_intermediate }}"
+      sha256sum: "e446c5e9dbef9d09ac9f7027c034602492437a05ff6c40011d7235fca639c79a"
+
+  - name: generate ssl key
+    command: openssl genrsa -out {{ _server_key_file }} 4096
+    args:
+      creates: "{{ _server_key_file }}"
+
+  - name: generate csr
+    command: openssl req -sha256 -new -config {{ _ssl_csr_params_file }} -key {{ _server_key_file }} -out {{ _server_csr_file }}
+    args:
+      creates: "{{ _server_csr_file }}"
+
+  - name: set up helpful facts
+    set_fact:
+      _le_account_key_enc: "{{ ssl_server_home }}/letsencrypt_account.pem.enc"
+      _le_account_key: "{{ ssl_server_home }}/letsencrypt_account.pem"
+
+  - name: set letsencrypt account key
+    copy: src={{ letsencrypt_account_key_file }} dest={{ _le_account_key_enc }} mode=0700
+
+  - name: decrypt letsencrypt account key
+    command: openssl rsa -in {{ _le_account_key_enc }} -out {{ _le_account_key }} -passin pass:{{ letsencrypt_decrypt_password }}
+    args:
+      creates: "{{ _le_account_key }}"
+
+  - name: get challenge
+    letsencrypt:
+      account_email: "{{ letsencrypt_account_email }}"
+      account_key: "{{ _le_account_key }}"
+      challenge: "{{ letsencrypt_challenge }}"
+      csr: "{{ _server_csr_file }}"
+      dest: "{{ _server_cert_src_file }}"
+      acme_directory: "{{ letsencrypt_acme_directory }}"
+      remaining_days: "{{ letsencrypt_validity_window }}"
+    register: st_challenge
+
+  - include_tasks: ssl_letsencrypt_http_01.yml
+    when: letsencrypt_challenge == 'http-01'
+
+  - include_tasks: ssl_letsencrypt_dns_01_with_r53.yml
+    when: letsencrypt_challenge == 'dns-01' and letsencrypt_dns_resolver['driver'] == 'route53'
+
+  - name: obtain certificate
+    letsencrypt:
+      account_email: "{{ letsencrypt_account_email }}"
+      account_key: "{{ _le_account_key }}"
+      challenge: "{{ letsencrypt_challenge }}"
+      csr: "{{ _server_csr_file }}"
+      dest: "{{ _server_cert_src_file }}"
+      data: "{{ st_challenge }}"
+      acme_directory: "{{ letsencrypt_acme_directory }}"
+      remaining_days: "{{ letsencrypt_validity_window }}"
+    register: st_challenge_result
+    when: st_challenge.changed
+    notify: restart nginx
+
+  - name: check certificate file existance
+    stat: path="{{ _server_cert_file }}"
+    register: st_certificate_file
+
+  - name: create certificate file with generated cert and intermediate for compatibility
+    shell: "cat {{ _server_cert_src_file }} {{ _server_cert_intermediate }} > {{ _server_cert_file }}"
+    when: st_challenge_result.changed or not st_certificate_file.stat.exists
+    notify: restart nginx
+
+  become: true
+  become_user: root

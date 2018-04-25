@@ -1,0 +1,6 @@
+- name: satisfy the http-01 challenge/s
+  copy:
+    dest: "{{ letsencrypt_sandbox_dir }}/{{ st_challenge['challenge_data'][item]['http-01']['resource'] }}"
+    content: "{{ st_challenge['challenge_data'][item]['http-01']['resource_value'] }}"
+  with_items: "{{ vhost_names }}"
+  when: st_challenge.changed
