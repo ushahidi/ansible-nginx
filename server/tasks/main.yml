@@ -33,6 +33,10 @@
     when: gzip_support
     notify: restart nginx
 
+  - name: setup header parsing
+    template: src="templates/header_parsing.conf.j2" dest="/etc/nginx/conf.d/header_parsing.conf"
+    notify: restart nginx
+
   - name: setup fastcgi params
     template: src="templates/fastcgi_params.j2" dest=/etc/nginx/fastcgi_params
     notify: restart nginx

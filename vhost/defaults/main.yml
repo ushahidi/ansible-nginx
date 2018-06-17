@@ -10,6 +10,8 @@ vhost_enabled: true
 default_server: false
 http_enabled: true
 
+# vhost_dedicated_health_check_path:       # URL path dedicated to health checks from load balancer
+
 https_enabled: true
 https_force_redirect: true        # redirect http://.* to https://.*
 ssl_server_home: /etc/ssl/private # server filesystem path for SSL related files
