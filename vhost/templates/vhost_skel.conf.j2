@@ -47,8 +47,9 @@ server {
     ssl_certificate_key {{ _server_key_file }};
 {% endif %}
 
-{% if https_force_redirect %}
-
+{# Perform forced redirection only if https not enabled (i.e. handled in LB) #}
+{# or if the certificates for performing the redirects are already available #}
+{% if https_force_redirect and (not https_enabled or _ssl_certs_available) %}
     # Redirect http requests to the equivalent https URL
     set $https_redir_cond "";
     # this is just an elaborated AND boolean workaround (missing in nginx)
@@ -59,6 +60,7 @@ server {
     if ($real_scheme != "https") {
       set $https_redir_cond "${https_redir_cond}B";
     }
+
     if ($https_redir_cond = "AB") {
       rewrite ^ https://$host$uri permanent;
     }
