@@ -35,7 +35,7 @@ server {
 
   set $is_dedicated_health_check "";
 {% if vhost_dedicated_health_check_path is defined and vhost_dedicated_health_check_path %}
-  if ($uri = "{{ vhost_dedicated_health_check_path }}") {
+  if ($request_uri = "{{ vhost_dedicated_health_check_path }}") {
     set $is_dedicated_health_check "true";
   }
 {% endif %}
