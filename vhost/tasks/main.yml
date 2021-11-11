@@ -1,9 +1,0 @@
----
-- name: debug vars
-  debug: var={{ item }}
-  with_items: [ 'vhost_id', 'vhost_names', 'vhost_docroot', 'vhost_app_config' ]
-
-- include_tasks: ssl_{{ ssl_certs_flavor }}.yml
-  when: https_enabled
-
-- include_tasks: vhost_write.yml
