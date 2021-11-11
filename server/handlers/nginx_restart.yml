@@ -1,8 +1,0 @@
----
-- block:
-  - name: test config files
-    command: nginx -t
-  - name: restart nginx
-    service: name=nginx state=restarted enabled=yes
-  become: true
-  become_user: root

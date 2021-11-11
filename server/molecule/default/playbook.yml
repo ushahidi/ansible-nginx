@@ -1,9 +1,0 @@
----
-- name: Converge
-  hosts: all
-  vars:
-    firewall_disabled: true
-  roles:
-    - role: server
-      fastcgi_cache_enabled: true
-
